@@ -17,10 +17,9 @@ class _LunchScreenState extends State<LunchScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMarkedData(); // Cargar datos al iniciar la pantalla
+    _loadMarkedData();
   }
 
-  // Cargar datos de SharedPreferences
   Future<void> _loadMarkedData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -32,12 +31,12 @@ class _LunchScreenState extends State<LunchScreen> {
     });
   }
 
-  // Guardar datos en SharedPreferences
   Future<void> _saveMarkedData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isMarked', isMarked);
     if (markedDate != null) {
-      await prefs.setString('markedDate', markedDate!.toIso8601String());
+      final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      await prefs.setString('markedDate', today);
     }
   }
 
@@ -51,6 +50,7 @@ class _LunchScreenState extends State<LunchScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Mensaje superior
             const Text(
@@ -62,13 +62,12 @@ class _LunchScreenState extends State<LunchScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20), // Espaciado entre el mensaje y el botón
+            const SizedBox(height: 20),
 
             // Botón de marcar almuerzo
             ElevatedButton(
               onPressed: isMarked
                   ? () {
-                // Mostrar SnackBar si ya marcó
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Ya realizaste tu marca el día de hoy!'),
@@ -76,7 +75,6 @@ class _LunchScreenState extends State<LunchScreen> {
                 );
               }
                   : () {
-                // Mostrar el cuadro de diálogo de confirmación
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -86,19 +84,18 @@ class _LunchScreenState extends State<LunchScreen> {
                       actions: [
                         TextButton(
                           onPressed: () {
-                            Navigator.of(context).pop(); // Cerrar diálogo
+                            Navigator.of(context).pop();
                           },
                           child: const Text('Cancelar'),
                         ),
                         TextButton(
                           onPressed: () async {
-                            // Confirmar la marca y registrar la fecha
                             setState(() {
                               isMarked = true;
-                              markedDate = DateTime.now(); // Registrar la fecha actual
+                              markedDate = DateTime.now();
                             });
-                            await _saveMarkedData(); // Guardar datos en SharedPreferences
-                            Navigator.of(context).pop(); // Cerrar diálogo
+                            await _saveMarkedData();
+                            Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('¡Marca registrada con éxito!'),
@@ -121,38 +118,34 @@ class _LunchScreenState extends State<LunchScreen> {
                 style: const TextStyle(fontSize: 16),
               ),
             ),
-            const SizedBox(height: 20), // Espaciado entre el botón y el calendario
+            const SizedBox(height: 20),
 
-            // Espacio flexible para empujar el calendario hacia abajo
-            const Spacer(),
-
-            // Calendario en la parte inferior
-            TableCalendar(
-              firstDay: DateTime.utc(2022, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: DateTime.now(),
-              calendarFormat: CalendarFormat.month,
-              selectedDayPredicate: (day) {
-                // Destacar el día si coincide con la marca
-                return markedDate != null &&
-                    DateFormat('yyyy-MM-dd').format(markedDate!) ==
-                        DateFormat('yyyy-MM-dd').format(day);
-              },
-              onDaySelected: (selectedDay, focusedDay) {
-                // Acciones al seleccionar un día (opcional)
-              },
-              calendarStyle: CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: Colors.blueAccent,
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
-                selectedTextStyle: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+            // Calendario con un espacio proporcional
+            Expanded(
+              child: TableCalendar(
+                firstDay: DateTime.utc(2022, 1, 1),
+                lastDay: DateTime.utc(2030, 12, 31),
+                focusedDay: DateTime.now(),
+                calendarFormat: CalendarFormat.month,
+                selectedDayPredicate: (day) {
+                  return markedDate != null &&
+                      DateFormat('yyyy-MM-dd').format(markedDate!) ==
+                          DateFormat('yyyy-MM-dd').format(day);
+                },
+                onDaySelected: (selectedDay, focusedDay) {},
+                calendarStyle: CalendarStyle(
+                  todayDecoration: BoxDecoration(
+                    color: Colors.blueAccent,
+                    shape: BoxShape.circle,
+                  ),
+                  selectedDecoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                  selectedTextStyle: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
