@@ -3,6 +3,8 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart'; // Para manejar fechas
 
 class LunchScreen extends StatefulWidget {
+  const LunchScreen({super.key});
+
   @override
   _LunchScreenState createState() => _LunchScreenState();
 }
