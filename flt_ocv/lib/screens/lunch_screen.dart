@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:intl/intl.dart'; // Para manejar fechas
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LunchScreen extends StatefulWidget {
   const LunchScreen({super.key});
@@ -10,8 +11,35 @@ class LunchScreen extends StatefulWidget {
 }
 
 class _LunchScreenState extends State<LunchScreen> {
-  bool isMarked = false; // Estado del botón para evitar marcas múltiples
-  DateTime? markedDate; // Fecha de la última marca realizada
+  bool isMarked = false;
+  DateTime? markedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMarkedData(); // Cargar datos al iniciar la pantalla
+  }
+
+  // Cargar datos de SharedPreferences
+  Future<void> _loadMarkedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isMarked = prefs.getBool('isMarked') ?? false;
+      String? dateString = prefs.getString('markedDate');
+      if (dateString != null) {
+        markedDate = DateTime.parse(dateString);
+      }
+    });
+  }
+
+  // Guardar datos en SharedPreferences
+  Future<void> _saveMarkedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isMarked', isMarked);
+    if (markedDate != null) {
+      await prefs.setString('markedDate', markedDate!.toIso8601String());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,12 +91,13 @@ class _LunchScreenState extends State<LunchScreen> {
                           child: const Text('Cancelar'),
                         ),
                         TextButton(
-                          onPressed: () {
+                          onPressed: () async {
                             // Confirmar la marca y registrar la fecha
                             setState(() {
                               isMarked = true;
                               markedDate = DateTime.now(); // Registrar la fecha actual
                             });
+                            await _saveMarkedData(); // Guardar datos en SharedPreferences
                             Navigator.of(context).pop(); // Cerrar diálogo
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
