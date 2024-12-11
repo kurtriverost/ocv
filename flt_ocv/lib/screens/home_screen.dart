@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'lunch_screen.dart';
+import 'login_screen.dart'; // Importa tu pantalla de login aquí
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,6 +34,19 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Función para hacer logout
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Limpia todos los datos almacenados
+
+    // Navegar a la pantalla de login
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false, // Elimina todas las rutas anteriores
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     DateTime now = DateTime.now();
@@ -51,7 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
             InkWell(
               onTap: () {
                 // Acción al hacer clic en la tarjeta de identificación
-
               },
               child: Card(
                 elevation: 4,
@@ -81,8 +94,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
+                              children: const [
+                                Text(
                                   'Kurt Riveros',
                                   style: TextStyle(
                                     fontSize: 18,
@@ -107,14 +120,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Icon(
+                              children: const [
+                                Icon(
                                   Icons.star,
                                   color: Colors.amber,
                                   size: 30,
                                 ),
-                                const SizedBox(width: 16),
-                                const Text(
+                                SizedBox(width: 16),
+                                Text(
                                   '300',
                                   style: TextStyle(
                                     fontSize: 20,
@@ -122,8 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: Colors.black,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                const Text(
+                                SizedBox(width: 8),
+                                Text(
                                   'Puntos',
                                   style: TextStyle(
                                     fontSize: 14,
@@ -242,6 +255,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+                ),
+              ),
+            ),
+            const Spacer(),
+            // Botón de logout
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: ElevatedButton(
+                onPressed: _logout,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+                child: const Text(
+                  'Cerrar Sesión',
+                  style: TextStyle(fontSize: 14),
                 ),
               ),
             ),
