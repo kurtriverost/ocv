@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class LunchScreen extends StatefulWidget {
   const LunchScreen({super.key});
@@ -11,33 +12,84 @@ class LunchScreen extends StatefulWidget {
 }
 
 class _LunchScreenState extends State<LunchScreen> {
+  Map<String, bool> marks = {}; // Mapa que almacena las marcas
+  String today = DateFormat('yyyy-MM-dd').format(DateTime.now()); // Fecha actual
   bool isMarked = false;
-  DateTime? markedDate;
 
   @override
   void initState() {
     super.initState();
-    _loadMarkedData();
+    _loadMarks();
   }
 
-  Future<void> _loadMarkedData() async {
+  // Cargar las marcas desde SharedPreferences
+  Future<void> _loadMarks() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isMarked = prefs.getBool('isMarked') ?? false;
-      String? dateString = prefs.getString('markedDate');
-      if (dateString != null) {
-        markedDate = DateTime.parse(dateString);
-      }
-    });
-  }
+    final String? marksString = prefs.getString('marks');
 
-  Future<void> _saveMarkedData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isMarked', isMarked);
-    if (markedDate != null) {
-      final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      await prefs.setString('markedDate', today);
+    if (marksString != null) {
+      // Deserializar el mapa
+      final Map<String, dynamic> loadedMarks = json.decode(marksString);
+      marks = loadedMarks.map((key, value) => MapEntry(key, value as bool));
     }
+
+    // Asegurar que el mapa esté actualizado con los últimos 10 días
+    _updateLast10Days();
+
+    setState(() {
+      isMarked = marks[today] ?? false;
+    });
+    print("hola amigue");
+    print(marks);
+  }
+
+  // Actualizar el mapa para que contenga los últimos 10 días, ordenados cronológicamente
+  void _updateLast10Days() {
+    final DateTime now = DateTime.now();
+    final List<String> last10Days = List.generate(
+      10,
+          (index) => DateFormat('yyyy-MM-dd').format(now.subtract(Duration(days: index))),
+    ).reversed.toList();
+
+    // Agregar días faltantes
+    for (String day in last10Days) {
+      if (!marks.containsKey(day)) {
+        marks[day] = false; // Inicializar como `false` si el día no existe
+      }
+    }
+
+    // Eliminar días fuera del rango de los últimos 10 días
+    marks.removeWhere((key, value) => !last10Days.contains(key));
+
+    // Ordenar el mapa cronológicamente
+    marks = Map.fromEntries(
+      marks.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key)), // Ordenar por fecha (clave)
+    );
+  }
+
+  // Guardar las marcas en SharedPreferences
+  Future<void> _saveMarks() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Serializar el mapa
+    final String marksString = json.encode(marks);
+    await prefs.setString('marks', marksString);
+  }
+
+  // Agregar una marca
+  Future<void> _addMark() async {
+    setState(() {
+      // Marcar el día actual
+      //marks[today] = true;
+      isMarked = true;
+      marks["2024-12-10"] = true;
+
+      // Asegurarse de que el mapa mantenga los últimos 10 días
+      _updateLast10Days();
+    });
+
+    await _saveMarks();
   }
 
   @override
@@ -90,11 +142,7 @@ class _LunchScreenState extends State<LunchScreen> {
                         ),
                         TextButton(
                           onPressed: () async {
-                            setState(() {
-                              isMarked = true;
-                              markedDate = DateTime.now();
-                            });
-                            await _saveMarkedData();
+                            await _addMark();
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -128,11 +176,20 @@ class _LunchScreenState extends State<LunchScreen> {
                 focusedDay: DateTime.now(),
                 calendarFormat: CalendarFormat.month,
                 selectedDayPredicate: (day) {
-                  return markedDate != null &&
-                      DateFormat('yyyy-MM-dd').format(markedDate!) ==
-                          DateFormat('yyyy-MM-dd').format(day);
+                  final dayString = DateFormat('yyyy-MM-dd').format(day);
+                  return marks[dayString] ?? false; // Resaltar si el día está marcado
                 },
-                onDaySelected: (selectedDay, focusedDay) {},
+                onDaySelected: (selectedDay, focusedDay) {
+                  final dayString = DateFormat('yyyy-MM-dd').format(selectedDay);
+                  final marked = marks[dayString] ?? false;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(marked
+                          ? 'El ${DateFormat('dd/MM/yyyy').format(selectedDay)} fue marcado.'
+                          : 'El ${DateFormat('dd/MM/yyyy').format(selectedDay)} no fue marcado.'),
+                    ),
+                  );
+                },
                 calendarStyle: CalendarStyle(
                   todayDecoration: BoxDecoration(
                     color: Colors.blueAccent,
